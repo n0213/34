@@ -1,0 +1,144 @@
+cat << 'EOF' > index.html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가족 앨범</title>
+    <style>
+        :root { --point: #ff4d4d; --bg: #0f0f0f; --card: #1a1a1a; }
+        body { 
+            background-color: var(--bg); 
+            color: #e0e0e0; 
+            font-family: 'Pretendard', -apple-system, sans-serif; 
+            margin: 0; padding: 0; 
+            background-image: radial-gradient(#222 0.5px, transparent 0.5px);
+            background-size: 20px 20px;
+        }
+        
+        header { text-align: center; padding: 100px 20px; }
+        h1 { color: var(--point); font-size: 3.2rem; margin: 0; font-weight: 800; text-shadow: 0 0 20px rgba(255,77,77,0.3); }
+        .subtitle { color: #888; margin-top: 15px; font-size: 1.2rem; font-weight: 300; }
+        
+        nav { 
+            position: sticky; top: 0; background: rgba(15, 15, 15, 0.8); 
+            padding: 20px; text-align: center; z-index: 100; 
+            backdrop-filter: blur(15px); border-bottom: 1px solid #222;
+        }
+        nav a { color: #777; text-decoration: none; margin: 0 20px; font-weight: 600; transition: 0.3s; }
+        nav a:hover { color: var(--point); }
+
+        main { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .section-title { 
+            padding: 80px 0 30px; font-size: 2rem; color: #fff; 
+            display: flex; align-items: center; gap: 15px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, #444, transparent); }
+        
+        .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px; }
+        .photo-card { 
+            background: var(--card); border-radius: 20px; overflow: hidden; 
+            transition: 0.5s cubic-bezier(0.2, 1, 0.3, 1); border: 1px solid #222; position: relative;
+        }
+        .photo-card:hover { 
+            transform: translateY(-10px) scale(1.02); border-color: var(--point); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(255,77,77,0.1); 
+        }
+        .photo-card img { width: 100%; height: 350px; object-fit: cover; display: block; transition: 0.5s; cursor: pointer; }
+        .photo-info { padding: 20px; font-size: 0.8rem; text-align: center; color: #444; letter-spacing: 2px; }
+
+        /* 확대 모달 창 */
+        #modal { 
+            display: none; position: fixed; z-index: 1000; top: 0; left: 0; 
+            width: 100%; height: 100%; background: rgba(0,0,0,0.95); 
+            flex-direction: column; align-items: center; justify-content: center; 
+        }
+        #modal.active { display: flex; }
+        #modal img { max-width: 85%; max-height: 75%; border-radius: 10px; border: 2px solid #333; }
+        
+        .modal-btns { margin-top: 25px; display: flex; gap: 15px; }
+        .btn { 
+            padding: 12px 25px; border-radius: 30px; border: none; cursor: pointer; 
+            font-weight: bold; transition: 0.3s; font-size: 0.9rem;
+        }
+        .btn-close { background: #333; color: #ccc; }
+        .btn-close:hover { background: #444; }
+
+        footer { text-align: center; padding: 100px 0; color: #333; border-top: 1px solid #222; margin-top: 100px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>가족 앨범</h1>
+    <p class="subtitle">시현과 지안의 기록</p>
+</header>
+
+<nav>
+    <a href="#sihyun">시현</a>
+    <a href="#jian">지안</a>
+    <a href="#family">함께</a>
+</nav>
+
+<main>
+    <section id="sihyun">
+        <h2 class="section-title">류시현 <span style="font-size: 1rem; color: #555; font-weight: normal;">(1-50)</span></h2>
+        <div class="album-grid" id="grid-sihyun"></div>
+    </section>
+    <section id="jian">
+        <h2 class="section-title">류지안 <span style="font-size: 1rem; color: #555; font-weight: normal;">(51-100)</span></h2>
+        <div class="album-grid" id="grid-jian"></div>
+    </section>
+    <section id="family">
+        <h2 class="section-title">함께 <span style="font-size: 1rem; color: #555; font-weight: normal;">(101-102)</span></h2>
+        <div class="album-grid" id="grid-family"></div>
+    </section>
+</main>
+
+<div id="modal">
+    <img id="modal-img" src="">
+    <div class="modal-btns">
+        <button class="btn btn-close" onclick="closeModal()">닫기</button>
+    </div>
+</div>
+
+<footer>
+    © 2026 가족 아카이브. 모든 이미지는 안전하게 보관되어 있습니다.
+</footer>
+
+<script>
+    const baseUrl = "https://pub-3929fd815c114fa09ea58c90bc4aa64d.r2.dev/";
+    
+    function render(s, e, id) {
+        const g = document.getElementById(id);
+        for (let i = s; i <= e; i++) {
+            const url = `${baseUrl}${i}.png`;
+            const card = document.createElement('div');
+            card.className = 'photo-card';
+            card.onclick = () => openModal(url);
+            card.innerHTML = `<img src="${url}" loading="lazy"><div class="photo-info">NO. ${String(i).padStart(3, '0')}</div>`;
+            g.appendChild(card);
+        }
+    }
+
+    function openModal(url) {
+        const modal = document.getElementById('modal');
+        const modalImg = document.getElementById('modal-img');
+        modalImg.src = url;
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    render(1, 50, 'grid-sihyun');
+    render(51, 100, 'grid-jian');
+    render(101, 102, 'grid-family');
+</script>
+</body>
+</html>
+EOF
+
